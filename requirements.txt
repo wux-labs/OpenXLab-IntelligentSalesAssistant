@@ -1,0 +1,102 @@
+streamlit==1.32.2
+streamlit_lottie==0.0.5
+streamlit_drawable_canvas==0.9.3
+streamlit_antd_components==0.3.2
+streamlit-extras==0.4.2
+
+huggingface-hub==0.21.0
+modelscope==1.9.5
+psutil==5.9.8
+sentencepiece==0.1.99
+bitsandbytes>=0.39.0
+transformers>=4.34.0
+accelerate>=0.24.1
+
+# bigdl-llm[all]==2.5.0b20240424
+# transformers==4.31.0
+# accelerate==0.21.0
+
+numpy==1.26.4
+pandas
+matplotlib==3.8.3
+selenium
+
+SQLAlchemy==2.0.25
+
+openai==0.28
+
+langchain[all]
+langchain-community
+sentence-transformers
+auto_gptq==0.7.1
+
+# torchaudio==2.0.2
+# torch==2.0.1
+# torchvision==0.15.2
+faiss-gpu
+
+# torch==2.0.1+cpu
+# torchaudio==2.0.2+cpu
+# torchvision==0.15.2+cpu
+
+# whisper
+audio_recorder_streamlit==0.0.8
+pydub==0.25.1
+whisper==1.1.10
+git+https://gitcode.net/wux_labs/whisper.git
+
+# melo
+librosa==0.9.1
+cn2an==0.5.22
+pypinyin==0.50.0
+jieba==0.42.1
+g2p_en==2.1.0
+txtsplit==1.0.0
+cached_path==1.6.2
+num2words==0.5.12
+anyascii==0.3.2
+jamo==0.4.1
+
+# albumentations==1.3.0
+# cached_path
+# einops==0.3.0
+# eng_to_ipa==0.0.2
+# fugashi==1.3.0
+# fvcore==0.1.5.post20221221
+# g2pkk>=0.1.1
+# gruut[de,es,fr]==2.2.3
+# inflect==7.0.0
+# langid==1.1.6
+# mecab-python3==1.0.5
+# omegaconf==2.1.1
+# open_clip_torch==2.17.1
+# opencv_contrib_python
+# opencv_python==4.7.0.72
+# opencv_python_headless==4.7.0.72
+# Pillow==9.4.0
+# pykakasi==2.2.1
+# pytorch_lightning==1.5.0
+# safetensors>=0.2.7
+# scipy==1.9.1
+# setuptools==66.0.0
+# submitit==1.5.1
+# timm==0.6.12
+# torchmetrics==0.6.0
+# tqdm==4.65.0
+# unidecode==1.3.7
+# unidic_lite==1.0.8
+# unidic==1.1.0
+# pycocotools
+# lvis
+
+# python-ffmpeg
+# moviepy
+
+# phx-class-registry
+# griffe
+# arxiv
+
+# langchain-elasticsearch
+# langchain-experimental
+
+# tensorflow
