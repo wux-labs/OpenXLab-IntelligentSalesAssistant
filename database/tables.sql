@@ -58,6 +58,9 @@ create table if not exists ai_labs_product_info (
     gender text,         -- 男装、女装
     season text,         -- 季节分类
     price double,        -- 商品价格
+    style text,          -- 风格
+    material text,       -- 面料
+    advantage text,      -- 亮点
     marketing text,      -- 营销文案
     description text,    -- 商品描述
     created_at datetime, -- 商品创建时间

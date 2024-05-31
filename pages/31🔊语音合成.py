@@ -11,19 +11,18 @@ from sqlalchemy import text
 
 import openai
 
-from common.chat import init_chat_config_form, get_chat_api_base, get_chat_api_key
-from common.voice import init_voice_config_form, voice_to_text_remote, voice_to_text_local, load_melo_model, text_to_voice
-from utils import get_avatar, init_page_header, init_session_state
-from utils import select_aigc_left_freq, update_aigc_perm_freq, use_limited
-from utils import load_model_by_id
+from common.chat import init_chat_config_form, get_chat_api_base, get_chat_api_key, internlm2_models, load_model_by_id, combine_history
+from common.voice import init_voice_config_form, voice_to_text_remote, voice_to_text_local, text_to_voice
+from utils import init_page_header, init_session_state, get_avatar
+from utils import select_aigc_left_freq, update_aigc_perm_freq, use_limited, check_use_limit
+from utils import is_cuda_available, clear_cuda_cache, clear_streamlit_cache
+from utils import global_system_prompt
 
 
 title = "语音合成"
 icon = "🔊"
 init_page_header(title, icon)
 init_session_state()
-
-speaker_model, speaker_ids = load_melo_model()
 
 localdir = f"users/{st.session_state.username}/records"
 
@@ -94,59 +93,70 @@ def cache_voice(user_voice_file, user_input_text):
                 st.write(user_input)
 
     with st.chat_message("assistant", avatar=get_avatar("myshell/melotts")):
-        with st.spinner("处理中，请稍等..."):
-            if st.session_state.config_voice_voice_type == "对话":
-                messages = []
-                if st.session_state.config_chat_model == "ai-labs/sales-chat-1_8b":
-                    tokenizer, model = load_model_by_id(st.session_state.config_chat_model)
-                    assistant_text, history = model.chat(
-                        tokenizer,
-                        user_input,
-                        messages
-                    )
-                elif st.session_state.config_chat_model == "internlm/internlm2-chat-7b":
-                    tokenizer, model = load_model_by_id(st.session_state.config_chat_model)
-                    assistant_text, history = model.chat(
-                        tokenizer,
-                        user_input,
-                        messages
-                    )
-                elif st.session_state.config_chat_model == "THUDM/chatglm3-6b":
-                    tokenizer, model = load_model_by_id(st.session_state.config_chat_model)
-                    assistant_text, history = model.chat(
-                        tokenizer,
-                        user_input,
-                        messages
-                    )
+        if check_use_limit and st.session_state.aigc_temp_voice >= st.session_state.aigc_temp_freq and st.session_state.aigc_perm_freq < 1:
+            use_limited()
+        else:
+            with st.spinner("处理中，请稍等..."):
+                if st.session_state.config_voice_voice_type == "对话":
+                    messages = [{
+                            "role": "system",
+                            "content": global_system_prompt
+                        }]
+                    if st.session_state.config_chat_model in internlm2_models:
+                        tokenizer, model, deploy = load_model_by_id(st.session_state.config_chat_model)
+                        if deploy == "huggingface":
+                            assistant_text, history = model.chat(
+                                tokenizer,
+                                combine_history(messages, user_input),
+                            )
+                        elif deploy == "lmdeploy":
+                            assistant_text = model.chat(
+                                combine_history(messages, user_input),
+                            ).response.text
+                    elif st.session_state.config_chat_model == "THUDM/chatglm3-6b":
+                        tokenizer, model, deploy = load_model_by_id(st.session_state.config_chat_model)
+                        assistant_text, history = model.chat(
+                            tokenizer,
+                            user_input,
+                            messages
+                        )
+                    else:
+                        messages.append({
+                            "role": "user",
+                            "content": user_input
+                        })
+                        openai.api_base = get_chat_api_base()
+                        openai.api_key = get_chat_api_key()
+                        response = openai.ChatCompletion.create(
+                            model=st.session_state.config_chat_model,
+                            messages=messages,
+                            max_tokens=st.session_state.config_chat_max_tokens,
+                            temperature=st.session_state.config_chat_temperature,
+                            top_p=st.session_state.config_chat_top_p,
+                            presence_penalty=st.session_state.config_chat_presence_penalty,
+                            frequency_penalty=st.session_state.config_chat_frequency_penalty
+                        )
+                        if hasattr(response.choices[0].message, "content"):
+                            assistant_text = response.choices[0].message.content
                 else:
-                    messages.append({
-                        "role": "user",
-                        "content": user_input
-                    })
-                    openai.api_base = get_chat_api_base()
-                    openai.api_key = get_chat_api_key()
-                    response = openai.ChatCompletion.create(
-                        model=st.session_state.config_chat_model,
-                        messages=messages,
-                        max_tokens=st.session_state.config_chat_max_tokens,
-                        temperature=st.session_state.config_chat_temperature,
-                        top_p=st.session_state.config_chat_top_p,
-                        presence_penalty=st.session_state.config_chat_presence_penalty,
-                        frequency_penalty=st.session_state.config_chat_frequency_penalty
-                    )
-                    if hasattr(response.choices[0].message, "content"):
-                        assistant_text = response.choices[0].message.content
-            else:
-                assistant_text = user_input
+                    assistant_text = user_input
 
-            assistant_voice = text_to_voice(assistant_text)
-            st.audio(assistant_voice, format="audio/mp3")
-            if st.session_state.config_voice_show_text:
-                st.write(assistant_text)
-            insert_voice(user_voice_file, user_input, assistant_voice, assistant_text)
+                assistant_voice = text_to_voice(assistant_text)
+                st.audio(assistant_voice, format="audio/mp3")
+                if st.session_state.config_voice_show_text:
+                    st.write(assistant_text)
+                insert_voice(user_voice_file, user_input, assistant_voice, assistant_text)
+                if check_use_limit and st.session_state.aigc_temp_voice >= st.session_state.aigc_temp_freq:
+                    update_aigc_perm_freq(-1)
+                select_aigc_freq()
+            clear_cuda_cache()
 
 
 if __name__ == '__main__':
+
+    clear_streamlit_cache(["chat_tokenizer", "chat_model", "whisper_model_base", "whisper_model_small", "whisper_model_medium", "whisper_model_large"])
+
+    select_aigc_freq()
     
     with st.sidebar:
         tabs = st.tabs(["模型设置", "语音设置"])
@@ -160,6 +170,8 @@ if __name__ == '__main__':
         cols = st.columns(5)
         with cols[2]:
             audio_bytes = audio_recorder(text="", pause_threshold=2.5, icon_size='2x', sample_rate=16000)
+        if check_use_limit:
+            st.info(f"免费次数已用：{min(st.session_state.aigc_temp_freq, st.session_state.aigc_temp_voice)}/{st.session_state.aigc_temp_freq} 次。\n\r永久次数剩余：{st.session_state.aigc_perm_freq} 次。", icon="🙂")
 
     for user_voice, user_text, assistant_voice, assistant_text in select_voice():
         try:
@@ -181,8 +193,7 @@ if __name__ == '__main__':
 
     if user_input_text:
         cache_voice(None, user_input_text)
-
-    if audio_bytes:
+    elif audio_bytes:
         os.makedirs(localdir, exist_ok=True)
         filename = f"{datetime.now().strftime('%Y-%m-%d-%H%M%S')}.wav"
         filepath = f"{localdir}/{filename}"

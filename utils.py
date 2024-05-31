@@ -14,16 +14,39 @@ from database.database import engine
 from sqlalchemy import text
 
 import torch
-from transformers import AutoTokenizer
 
-from langchain_community.embeddings.huggingface import HuggingFaceEmbeddings
 
+global_system_prompt = "你的名字叫伍鲜，是AI-Labs团队的营销人员，也是一名经验丰富的服装营销人员，精通服装设计、服饰搭配、服装销售、服装信息咨询、售后服务等各类问题。你说话优雅、有艺术感、必要时可以引用典故，你总是称呼客户为朋友，同时你提到客户时总是很有礼貌地称呼您，从不用你。"
+
+check_use_limit = False
 
 def init_page_header(title, icon):
     st.set_page_config(
         page_title=title,
         page_icon=icon,
         layout="wide",
+        menu_items={
+            "Get Help": "https://github.com/wux-labs/OpenXLab-IntelligentSalesAssistant",
+            "Report a bug": "https://github.com/wux-labs/OpenXLab-IntelligentSalesAssistant/issues",
+            "About": """
+## 🏡智能营销助手
+
+众所周知，获客、活客、留客是电商行业的三大难题，谁拥有跟客户最佳的沟通方式，谁就拥有客户。
+
+随着用户消费逐渐转移至线上，电商行业面临以下一些问题：
+
+* 用户交流体验差
+* 商品推荐不精准
+* 客户转化率低
+* 退换货频率高
+* 物流成本高
+
+在这样的背景下，未来销售的引擎——大模型加持的智能营销助手就诞生了。
+
+它能够与用户的对话，了解用户的需求，基于多模态的AIGC生成能力，持续输出更符合用户消费习惯的文本、图片和视频等营销内容，推荐符合用户的商品，将营销与经营结合。
+
+""",
+        },
     )
     # add_logo("statics/docs/logo.png", height=60)
     st.sidebar.header(f"{icon}{title}")
@@ -53,18 +76,16 @@ def load_lottiefile(filepath: str):
 
 
 def get_avatar(model_id):
-    if model_id == "ai-labs/sales-chat-1_8b":
-        avatar = "statics/avatars/intern.png"
-    elif model_id == "internlm/internlm2-chat-7b":
+    if model_id in ["ai-labs/sales-chat-7b", "internlm/internlm2-chat-7b", "internlm/internlm2-chat-20b"]:
         avatar = "statics/avatars/intern.png"
     elif model_id == "THUDM/chatglm3-6b":
         avatar = "statics/avatars/chatglm.png"
-    elif model_id == "ai-labs/stable-diffusion":
+    elif model_id in ["ai-labs/stable-diffusion", "stabilityai/stable-diffusion-2-1"]:
         avatar = "statics/avatars/stablediffusion.png"
     elif model_id == "myshell/melotts":
         avatar = "statics/avatars/melotts.png"
     else:
-        avatar = None
+        avatar = "statics/avatars/sales.png"
     return avatar
 
 
@@ -115,26 +136,34 @@ def is_cuda_available():
     return torch.cuda.is_available()
 
 
-@st.cache_resource
-def load_model_by_id(model_id_or_path, **kwargs):
-    tokenizer = AutoTokenizer.from_pretrained("models/" + model_id_or_path,
-                                              trust_remote_code=True)
-    if is_cuda_available():
-        from transformers import AutoModel
-        model = AutoModel.from_pretrained("models/" + model_id_or_path,
-                                                    trust_remote_code=True).half().eval().cuda()
+def is_cuda_enough(needs):
+    if torch.cuda.device_count() > 1:
+        return True
     else:
-        from bigdl.llm.transformers import AutoModel
-        model = AutoModel.from_pretrained("models/" + model_id_or_path,
-                                                    load_in_4bit=True,
-                                                    trust_remote_code=True).eval()
-    return tokenizer, model
+        properties = torch.cuda.get_device_properties(0)
+        total_memory = int(f'{properties.total_memory / (1 << 20):.0f}')
+        return total_memory >= needs
 
 
-@st.cache_resource
-def load_huggingface_embedding():
-    embedding = HuggingFaceEmbeddings(model_name="models/GanymedeNil/text2vec-large-chinese")
-    return embedding
+def clear_cuda_cache():
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+
+def clear_streamlit_cache(keeps):
+    all_caches = ["chat_tokenizer", "chat_model", 
+                  "stable_diffusion_model",
+                  "xcomposer2_vl_tokenizer", "xcomposer2_vl_model",
+                  "whisper_model_base", "whisper_model_small", "whisper_model_medium", "whisper_model_large",
+                  "ask_product_history", "ask_product_llm",
+                  "sales_agent_model"
+                  ]
+
+    for cache in all_caches:
+        if cache not in keeps and cache in st.session_state.keys():
+            del st.session_state[cache]
+
+    clear_cuda_cache()
 
 
 def image_to_base64(image_path):

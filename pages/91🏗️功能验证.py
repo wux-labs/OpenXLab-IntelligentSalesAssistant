@@ -1,4 +1,5 @@
 import streamlit as st
+import torch
 import gc
 import os, subprocess
 
@@ -10,6 +11,9 @@ title = "功能验证"
 icon = "🏗️"
 init_page_header(title, icon)
 init_session_state()
+
+if st.button("清理缓存"):
+    torch.cuda.empty_cache()
 
 cmd_text = st.chat_input("您的输入...")
 

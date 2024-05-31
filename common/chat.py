@@ -1,12 +1,27 @@
 import streamlit as st
+import openai
+import os
 
-from utils import is_cuda_available
+import torch
+from transformers import AutoTokenizer
 
+from utils import is_cuda_available, is_cuda_enough
+
+internlm2_models = ["internlm/internlm2-chat-20b"] if is_cuda_enough(40950) else ["internlm/internlm2-chat-7b"]
+
+# "ai-labs/sales-chat-7b"
+default_model = internlm2_models[0]
+
+deepinfra_models = ["meta-llama/Llama-2-70b-chat-hf", "meta-llama/Llama-2-13b-chat-hf", "meta-llama/Llama-2-7b-chat-hf",
+                    "codellama/CodeLlama-34b-Instruct-hf", "jondurbin/airoboros-l2-70b-gpt4-1.4.1",
+                    "mistralai/Mistral-7B-Instruct-v0.1", "mistralai/Mixtral-8x7B-Instruct-v0.1"]
+
+config_chat_max_new_tokens = 2048
+config_chat_temperature = 0.1
+config_chat_top_p = 0.7
 
 def init_chat_config_form():
-    model_option = ["ai-labs/sales-chat-1_8b", "internlm/internlm2-chat-7b"]
-    if is_cuda_available():
-        model_option.append("THUDM/chatglm3-6b")
+    model_option = internlm2_models + deepinfra_models
 
     model = st.selectbox("Model", key="config_chat_model", options=model_option)
     max_tokens = st.number_input("Max Tokens", key="config_chat_max_tokens", min_value=512, max_value=4096,
@@ -29,8 +44,91 @@ def init_chat_config_form():
 
 
 def get_chat_api_base():
-    return ""
+    return os.environ.get("CHAT_OPENAI_BASE")
 
 
 def get_chat_api_key():
     return ""
+
+
+def load_model_by_id(model_id_or_path, **kwargs):
+    if "chat_model" not in st.session_state.keys():
+        st.session_state["chat_tokenizer"] = AutoTokenizer.from_pretrained("models/" + model_id_or_path,
+                                                                           trust_remote_code=True)
+        if is_cuda_available():
+            if is_cuda_enough(24566): # 40950
+                from transformers import AutoModel
+                st.session_state["chat_model"] = AutoModel.from_pretrained("models/" + model_id_or_path,
+                                                                        trust_remote_code=True).half().eval().cuda()
+                st.session_state["chat_deploy"] = "huggingface"
+            else:
+                from lmdeploy import TurbomindEngineConfig, pipeline
+                model_format = "hf"
+                if model_id_or_path.endswith("-4bit"):
+                    model_format = "awq"
+                backend_config = TurbomindEngineConfig(model_format=model_format, session_len=32768, cache_max_entry_count=0.4)
+                st.session_state["chat_model"] = pipeline("models/" + model_id_or_path, backend_config=backend_config, model_name="internlm2")
+                st.session_state["chat_tokenizer"] = None
+                st.session_state["chat_deploy"] = "lmdeploy"
+
+        else:
+            from bigdl.llm.transformers import AutoModel
+            st.session_state["chat_model"] = AutoModel.from_pretrained("models/" + model_id_or_path,
+                                                                       load_in_4bit=True,
+                                                                       trust_remote_code=True).eval()
+            st.session_state["chat_deploy"] = "bigdl"
+    return st.session_state["chat_tokenizer"], st.session_state["chat_model"], st.session_state["chat_deploy"]
+
+
+system_prompt = "<s><|im_start|>system\n{system}<|im_end|>\n"
+user_prompt = "<|im_start|>user\n{user}<|im_end|>\n"
+assistant_prompt = "<|im_start|>assistant\n{assistant}<|im_end|>\n"
+cur_query_prompt = "<|im_start|>user\n{user}<|im_end|>\n\
+    <|im_start|>assistant\n"
+
+
+def combine_history(messages, prompt):
+    total_prompt = ""
+    for message in messages:
+        cur_content = message['content']
+        if message['role'] == 'system':
+            cur_prompt = system_prompt.format(system=cur_content)
+        elif message['role'] == 'user':
+            cur_prompt = user_prompt.format(user=cur_content)
+        elif message['role'] == 'assistant':
+            cur_prompt = assistant_prompt.format(assistant=cur_content)
+        else:
+            raise RuntimeError
+        total_prompt += cur_prompt
+    total_prompt = total_prompt + cur_query_prompt.format(user=prompt)
+    return total_prompt
+
+
+def translate_to_english(prompt):
+    answer = ""
+    try:
+        openai.api_base = get_chat_api_base()
+        openai.api_key = get_chat_api_key()
+        chunk = openai.ChatCompletion.create(
+            model="jondurbin/airoboros-l2-70b-gpt4-1.4.1",
+            messages=[
+                {"role": "system", "content": "请将以下内容翻译成英文，如果已经是英文了就直接返回，内容如下："},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        if hasattr(chunk.choices[0].message, "content"):
+            answer = chunk.choices[0].message.content
+        return answer
+    except:
+        tokenizer, model, deploy = load_model_by_id(default_model)
+        if deploy == "huggingface":
+            answer, history = model.chat(
+                tokenizer,
+                prompt,
+                history=[("请将以下内容翻译成英文，如果已经是英文了就直接返回，内容如下：", '')]
+            )
+        elif deploy == "lmdeploy":
+            answer = model.chat(
+                combine_history([{"role": "system", "content": "请将以下内容翻译成英文，如果已经是英文了就直接返回，内容如下："}], prompt),
+            ).response.text
+        return answer

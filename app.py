@@ -7,11 +7,23 @@ from sqlalchemy import text
 
 from streamlit_lottie import st_lottie
 from streamlit_extras.app_logo import add_logo
-from download import *
-from utils import init_session_state, load_lottiefile
+from download_models import *
+from utils import init_session_state, load_lottiefile, is_cuda_enough
 
 import hashlib
 
+if os.path.exists("mv_file.flg"):
+    os.system(f'mv pages/01*U*.py pages/01📖系统介绍.py')
+    os.system(f'mv pages/11*U*.py pages/11🤖智能聊天.py')
+    os.system(f'mv pages/21*U*.py pages/21🎨图片生成.py')
+    os.system(f'mv pages/31*U*.py pages/31🔊语音合成.py')
+    os.system(f'mv pages/41*U*.py pages/41🛍️商品管理.py')
+    os.system(f'mv pages/42*U*.py pages/42🙋🏻商品咨询.py')
+    os.system(f'mv pages/51*U*.py pages/51💖商品推荐.py')
+    os.system(f'mv pages/52*U*.py pages/52☎️营销助手.py')
+    os.system(f'mv pages/61*U*.py pages/61👚在线试穿.py')
+    os.system(f'mv pages/71*U*.py pages/71🎮休闲游戏.py')
+    os.system(f'mv pages/91*U*.py pages/91🏗️功能验证.py')
 
 title = "智能营销助手"
 icon = "🏡"
@@ -19,6 +31,28 @@ st.set_page_config(
     page_title=title,
     page_icon=icon,
     layout="wide",
+    menu_items={
+        "Get Help": "https://github.com/wux-labs/OpenXLab-IntelligentSalesAssistant",
+        "Report a bug": "https://github.com/wux-labs/OpenXLab-IntelligentSalesAssistant/issues",
+        "About": """
+## 🏡智能营销助手
+
+众所周知，获客、活客、留客是电商行业的三大难题，谁拥有跟客户最佳的沟通方式，谁就拥有客户。
+
+随着用户消费逐渐转移至线上，电商行业面临以下一些问题：
+
+* 用户交流体验差
+* 商品推荐不精准
+* 客户转化率低
+* 退换货频率高
+* 物流成本高
+
+在这样的背景下，未来销售的引擎——大模型加持的智能营销助手就诞生了。
+
+它能够与用户的对话，了解用户的需求，基于多模态的AIGC生成能力，持续输出更符合用户消费习惯的文本、图片和视频等营销内容，推荐符合用户的商品，将营销与经营结合。
+
+""",
+    }
 )
 init_session_state()
 
@@ -161,7 +195,7 @@ if __name__ == '__main__':
     tabs = st.tabs(["项目介绍", "模型下载"])
     with tabs[0]:
         st.markdown("""
-                    众所周知，获客、活客、留客是电商行业的三大难题，谁拥有跟客户最佳的沟通方式，谁就拥有客户。<br/>
+                    众所周知，获客、活客、留客是电商行业的三大难题，谁拥有跟客户最佳的沟通方式，谁就拥有客户。<br/><br/>
                     随着用户消费逐渐转移至线上，电商行业面临以下一些问题：
                     <ul>
                         <li>用户交流体验差</li>
@@ -170,8 +204,8 @@ if __name__ == '__main__':
                         <li>退换货频率高</li>
                         <li>物流成本高</li>
                     </ul>
-                    在这样的背景下，未来销售的引擎——大模型加持的智能营销助手就诞生了。<br/>
-                    它能够基于多模态的AIGC生成能力，持续输出更符合用户消费习惯的文本、图片和视频等营销内容，将营销与经营结合。
+                    在这样的背景下，未来销售的引擎——大模型加持的智能营销助手就诞生了。<br/><br/>
+                    它能够与用户的对话，了解用户的需求，基于多模态的AIGC生成能力，持续输出更符合用户消费习惯的文本、图片和视频等营销内容，推荐符合用户的商品，将营销与经营结合。
 
                     """, unsafe_allow_html=True)
 
@@ -185,16 +219,15 @@ if __name__ == '__main__':
                 download_internlm_xcomposer2_model()
         cols = st.columns([0.5, 0.5])
         with cols[0]:
-            if st.button("InternLM-Chat-7B", use_container_width=True):
-                download_internlm2_chat_7b_model()
+            if st.button("图片生成模型", use_container_width=True):
+                download_stable_diffusion_model()
         with cols[1]:
-            if st.button("ChatGLM3-6B", use_container_width=True):
-                download_chatglm3_6b_model()
-        cols = st.columns([0.5, 0.5])
-        with cols[0]:
-            if st.button("Stable-Diffusion-Base", use_container_width=True):
-                download_stable_diffusion_base_model()
+            if st.button("其他必要模型", use_container_width=True):
+                download_other_model()
+        if is_cuda_enough(40950):
+            cols = st.columns([0.5, 0.5])
+            with cols[0]:
+                if st.button("虚拟试穿模型", use_container_width=True):
+                    download_anydoor_model()
 
     os.system(f'mkdir -p models')
-    # if not os.path.exists("models/ai-labs/sales-chat-1_8b"):
-    #     download_sales_chat_model()
