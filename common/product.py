@@ -17,6 +17,7 @@ from sqlalchemy import text
 from datetime import datetime
 
 from utils import is_cuda_available, is_cuda_enough
+from utils import cuda_size_24gb, cuda_size_40gb
 from utils import image_to_base64, update_aigc_perm_freq
 
 
@@ -274,9 +275,9 @@ def display_products(ids):
                 st.write("服装材质：" + row.iloc[8])
                 st.write("服装亮点：" + row.iloc[9])
             with cols[2]:
-                st.write(row.iloc[11])
+                st.markdown(row.iloc[11])
             st.markdown("-------")
-            st.write(str(row.iloc[10]))
+            st.markdown(str(row.iloc[10]))
             st.markdown("-------")
             cols = st.columns([0.2,0.2,0.2,0.2,0.2])
             with cols[0]:

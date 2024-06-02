@@ -9,6 +9,7 @@ from streamlit_lottie import st_lottie
 from streamlit_extras.app_logo import add_logo
 from download_models import *
 from utils import init_session_state, load_lottiefile, is_cuda_enough
+from utils import cuda_size_24gb, cuda_size_40gb
 
 import hashlib
 
@@ -208,6 +209,7 @@ if __name__ == '__main__':
                     它能够与用户的对话，了解用户的需求，基于多模态的AIGC生成能力，持续输出更符合用户消费习惯的文本、图片和视频等营销内容，推荐符合用户的商品，将营销与经营结合。
 
                     """, unsafe_allow_html=True)
+        st.image("statics/docs/image_00.png")
 
     with tabs[1]:
         cols = st.columns([0.5, 0.5])
@@ -224,7 +226,7 @@ if __name__ == '__main__':
         with cols[1]:
             if st.button("其他必要模型", use_container_width=True):
                 download_other_model()
-        if is_cuda_enough(40950):
+        if is_cuda_enough(cuda_size_40gb):
             cols = st.columns([0.5, 0.5])
             with cols[0]:
                 if st.button("虚拟试穿模型", use_container_width=True):

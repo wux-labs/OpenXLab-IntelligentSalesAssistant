@@ -6,8 +6,9 @@ import torch
 from transformers import AutoTokenizer
 
 from utils import is_cuda_available, is_cuda_enough
+from utils import cuda_size_24gb, cuda_size_40gb
 
-internlm2_models = ["internlm/internlm2-chat-20b"] if is_cuda_enough(40950) else ["internlm/internlm2-chat-7b"]
+internlm2_models = ["internlm/internlm2-chat-20b"] if is_cuda_enough(cuda_size_40gb) else ["internlm/internlm2-chat-7b"]
 
 # "ai-labs/sales-chat-7b"
 default_model = internlm2_models[0]
@@ -56,7 +57,7 @@ def load_model_by_id(model_id_or_path, **kwargs):
         st.session_state["chat_tokenizer"] = AutoTokenizer.from_pretrained("models/" + model_id_or_path,
                                                                            trust_remote_code=True)
         if is_cuda_available():
-            if is_cuda_enough(24566): # 40950
+            if is_cuda_enough(cuda_size_24gb): # 40950
                 from transformers import AutoModel
                 st.session_state["chat_model"] = AutoModel.from_pretrained("models/" + model_id_or_path,
                                                                         trust_remote_code=True).half().eval().cuda()

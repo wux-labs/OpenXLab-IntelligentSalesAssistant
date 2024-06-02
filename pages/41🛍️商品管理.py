@@ -20,6 +20,7 @@ from common.product import image_chat_answer, load_huggingface_embedding, produc
 
 from utils import init_page_header, init_session_state, get_avatar
 from utils import is_cuda_available, is_cuda_enough, clear_cuda_cache, clear_streamlit_cache
+from utils import cuda_size_24gb, cuda_size_40gb
 from utils import image_to_base64
 from utils import global_system_prompt
 
@@ -187,9 +188,9 @@ def query_product_page_condition():
                     st.write("服装材质：" + row.iloc[8])
                     st.write("服装亮点：" + row.iloc[9])
                 with cols[2]:
-                    st.write(row.iloc[11])
+                    st.markdown(row.iloc[11])
                 st.markdown("-------")
-                st.write(str(row.iloc[10]))
+                st.markdown(str(row.iloc[10]))
                 st.markdown("-------")
                 if st.session_state.rolename == "卖家":
                     cols = st.columns([0.2,0.2,0.2,0.2,0.2])
@@ -285,7 +286,7 @@ if __name__ == '__main__':
                     product_video = st.file_uploader("视频", type=["mp4", "avi"])
                 with cols[2]:
                     product_images = st.file_uploader("其他图",type=["png","jpg"], accept_multiple_files=True)
-                if is_cuda_enough(24566):
+                if is_cuda_enough(cuda_size_24gb):
                     cols = st.columns(3)
                     with cols[0]:
                         marketing = st.form_submit_button("生成营销文案", use_container_width=True)

@@ -7,11 +7,12 @@ from melo.api import TTS
 from datetime import datetime
 
 from utils import is_cuda_available, is_cuda_enough
+from utils import cuda_size_24gb, cuda_size_40gb
 
 def init_voice_config_form():
     model_type = st.selectbox("语音识别", key="config_voice_model_type", options=["本地", "远程"])
     model_size_option = ["base", "small", "medium"]
-    if is_cuda_available() and is_cuda_enough(40950):
+    if is_cuda_available() and is_cuda_enough(cuda_size_40gb):
         model_size_option.append("large")
     model_size = st.selectbox("模型大小", key="config_voice_model_size", options=model_size_option)
 

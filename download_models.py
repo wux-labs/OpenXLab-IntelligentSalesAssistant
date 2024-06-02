@@ -1,14 +1,15 @@
 import os
 import streamlit as st
 from utils import is_cuda_enough
+from utils import cuda_size_24gb, cuda_size_40gb
 
 
 def download_sales_chat_model():
     with st.spinner("正在下载智能营销助手模型，请稍等..."):
-        if is_cuda_enough(40950):
+        if is_cuda_enough(cuda_size_40gb):
             os.system(f'rm -rf models/internlm/internlm2-chat-20b')
             os.system(f'HF_ENDPOINT=https://hf-mirror.com huggingface-cli download --resume-download --local-dir-use-symlinks False internlm/internlm2-chat-20b --local-dir models/internlm/internlm2-chat-20b')
-        elif is_cuda_enough(24566):
+        elif is_cuda_enough(cuda_size_24gb):
             os.system(f'rm -rf models/internlm/internlm2-chat-7b')
             os.system(f'HF_ENDPOINT=https://hf-mirror.com huggingface-cli download --resume-download --local-dir-use-symlinks False internlm/internlm2-chat-7b --local-dir models/internlm/internlm2-chat-7b')
         else:
@@ -20,7 +21,7 @@ def download_sales_chat_model():
 
 def download_internlm_xcomposer2_model():
     with st.spinner("正在下载书生浦语灵笔模型，请稍等..."):
-        if is_cuda_enough(40950):
+        if is_cuda_enough(cuda_size_40gb):
             os.system(f'rm -rf models/internlm/internlm-xcomposer2-vl-7b')
             os.system(f'HF_ENDPOINT=https://hf-mirror.com huggingface-cli download --resume-download --local-dir-use-symlinks False internlm/internlm-xcomposer2-vl-7b --local-dir models/internlm/internlm-xcomposer2-vl-7b')
         else:
@@ -45,7 +46,7 @@ def download_other_model():
 
 def download_anydoor_model():
     with st.spinner("正在下载衣服试穿模型，请稍等..."):
-        if is_cuda_enough(40950):
+        if is_cuda_enough(cuda_size_40gb):
             os.system(f'rm -rf models/iic/AnyDoor')
             from modelscope.hub.snapshot_download import snapshot_download
             snapshot_download("iic/AnyDoor", cache_dir="models/")

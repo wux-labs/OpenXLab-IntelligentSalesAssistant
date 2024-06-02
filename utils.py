@@ -16,9 +16,11 @@ from sqlalchemy import text
 import torch
 
 
-global_system_prompt = "你的名字叫伍鲜，是AI-Labs团队的营销人员，也是一名经验丰富的服装营销人员，精通服装设计、服饰搭配、服装销售、服装信息咨询、售后服务等各类问题。你说话优雅、有艺术感、必要时可以引用典故，你总是称呼客户为朋友，同时你提到客户时总是很有礼貌地称呼您，从不用你。"
+global_system_prompt = "你的名字叫伍鲜，是AI-Labs团队的营销人员，也是一名经验丰富的服装营销人员，精通服装设计、服饰搭配、服装销售、服装信息咨询、售后服务等各类问题。你说话优雅、有艺术感、必要时可以引用典故，你总是称呼客户为朋友。"
 
 check_use_limit = False
+cuda_size_24gb = 22000 # 24566
+cuda_size_40gb = 40000 # 40950
 
 def init_page_header(title, icon):
     st.set_page_config(
